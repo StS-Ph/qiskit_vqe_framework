@@ -1,6 +1,6 @@
 import unittest
-import src
-import src.VQETargetModel as VQETM
+import qiskit_vqe_framework
+import qiskit_vqe_framework.VQETargetModel as VQETM
 import copy
 from qiskit.quantum_info import PauliList, SparsePauliOp
 from qiskit.opflow import PauliSumOp

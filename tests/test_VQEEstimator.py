@@ -1,8 +1,8 @@
 import unittest
 from qiskit_ibm_runtime import QiskitRuntimeService, Session
 from qiskit import IBMQ
-import src
-import src.VQEEstimator as VQEE
+import qiskit_vqe_framework
+import qiskit_vqe_framework.VQEEstimator as VQEE
 
 class TestVQEEstimatorCalibration(unittest.TestCase):
     def setUp(self):

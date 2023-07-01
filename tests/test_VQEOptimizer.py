@@ -1,7 +1,7 @@
 import unittest
-import src
-import src.VQEOptimizer as VQEO
-import src.TerminationChecker as tc
+import qiskit_vqe_framework
+import qiskit_vqe_framework.VQEOptimizer as VQEO
+import qiskit_vqe_framework.TerminationChecker as tc
 import qiskit.algorithms.optimizers as optimizers
 import copy
 

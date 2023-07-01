@@ -1,11 +1,11 @@
 import unittest
-import src
-import src.VQEResult as VQER
-import src.VQETargetModel as VQETM
-import src.VQEAnsatz as VQEA
-import src.VQEOptimizer as VQEO
-import src.TerminationChecker as tc
-import src.VQEEstimator as VQEE
+import qiskit_vqe_framework
+import qiskit_vqe_framework.VQEResult as VQER
+import qiskit_vqe_framework.VQETargetModel as VQETM
+import qiskit_vqe_framework.VQEAnsatz as VQEA
+import qiskit_vqe_framework.VQEOptimizer as VQEO
+import qiskit_vqe_framework.TerminationChecker as tc
+import qiskit_vqe_framework.VQEEstimator as VQEE
 import copy
 
 class TestVQEResultData(unittest.TestCase):

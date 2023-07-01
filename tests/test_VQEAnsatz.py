@@ -1,6 +1,6 @@
 import unittest
-import src
-import src.VQEAnsatz as VQEA
+import qiskit_vqe_framework
+import qiskit_vqe_framework.VQEAnsatz as VQEA
 import copy
 
 

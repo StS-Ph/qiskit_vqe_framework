@@ -1,6 +1,6 @@
 import unittest
-import src
-import src.TerminationChecker as TC
+import qiskit_vqe_framework
+import qiskit_vqe_framework.TerminationChecker as TC
 import copy
 import numpy as np
 
