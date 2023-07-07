@@ -7,6 +7,9 @@ from qiskit.opflow import PauliSumOp
 from . import Calibration as cal
 import copy
 import abc
+import os
+import pickle
+import yaml
 
 class ModelCalibration(cal.Calibration):
     def __init__(self,
@@ -31,6 +34,15 @@ class ModelCalibration(cal.Calibration):
 
         return attr_dict
     
+    def to_yaml(self,
+                fname: str):
+        model_cal_dict = self.to_dict()
+        if os.path.isfile(fname):
+            raise ValueError("file {} does already exist!".format(fname))
+        
+        with open(fname, "w") as f:
+            yaml.dump(model_cal_dict, f)
+            
     def get_filevector(self) -> Tuple[List, List]:
         """
         Define method to write the summarized (shorted) calibration data in a list format
@@ -50,7 +62,43 @@ class ModelCalibration(cal.Calibration):
 
         return header, data
 
-        
+def get_ModelCalibration_from_yaml(fname: str) -> ModelCalibration:
+    
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    model_cal_dict = None
+    raw_data = None
+    with open(fname, "r") as f:
+        raw_data = f.read()
+
+    model_cal_dict = yaml.load(raw_data, Loader=yaml.Loader)
+    if model_cal_dict is None:
+        raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
+
+    model_name = model_cal_dict.pop("model_name", None)
+    if model_name is None:
+        raise ValueError("could not retrieve number of qubits from file!")
+    
+    name = model_cal_dict.pop("name", None)
+
+    model_cal = ModelCalibration(model_name, **model_cal_dict)
+    return model_cal
+
+def get_ModelCalibration_from_pickle(fname: str) -> ModelCalibration:
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    model_cal = None
+    with open(fname, "rb") as f:
+        model_cal = pickle.load(f)
+
+    if not isinstance(model_cal, ModelCalibration):
+        raise ValueError("loaded pickle object is no ModelCalibration!")
+
+    return model_cal
+
+      
 class VQETargetModel:
     def __init__(self,
                  model_parameters: ModelCalibration) -> None:

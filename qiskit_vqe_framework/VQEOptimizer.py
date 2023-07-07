@@ -9,6 +9,9 @@ from qiskit.algorithms.gradients import BaseEstimatorGradient
 from qiskit.primitives import BaseEstimator
 # from qiskit.algorithms.gradients import DerivativeType
 import copy
+import os
+import pickle
+import yaml
 
 class OptimizerCalibration(cal.Calibration):
     def __init__(self,
@@ -67,7 +70,15 @@ class OptimizerCalibration(cal.Calibration):
         opt_cal_dict["use_custom_param_init"] = use_custom_param_init
 
         return opt_cal_dict
+
+    def to_yaml(self,
+                fname: str):
+        opt_cal_dict = self.to_dict()
+        if os.path.isfile(fname):
+            raise ValueError("file {} does already exist!".format(fname))
         
+        with open(fname, "w") as f:
+            yaml.dump(opt_cal_dict, f)
 
     def get_filevector(self) -> Tuple[List, List]:
         """
@@ -99,7 +110,50 @@ class OptimizerCalibration(cal.Calibration):
 
         return header, data
 
-        
+def get_OptimizerCalibration_from_yaml(fname: str) -> OptimizerCalibration:
+    
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    opt_cal_dict = None
+    raw_data = None
+    with open(fname, "r") as f:
+        raw_data = f.read()
+
+    opt_cal_dict = yaml.load(raw_data, Loader=yaml.Loader)
+    if opt_cal_dict is None:
+        raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
+    
+    name_str = opt_cal_dict.pop("optimizer_name", None)
+    if name_str is None:
+        raise ValueError("could not retrieve optimizer name from file!")
+    maxiter = opt_cal_dict.pop("maxiter", None)
+    if maxiter is None:
+        raise ValueError("could not retrieve maximal number of iterations from file!")
+    grad_meth = opt_cal_dict.pop("grad_meth", None)
+    if grad_meth is None:
+        raise ValueError("could not retrieve gradient method from file!")
+
+    name = opt_cal_dict.pop("name", None)
+    use_custom_param_init = opt_cal_dict.pop("use_custom_param_init", None)
+    #print(ansatz_cal_dict)
+
+    opt_cal = OptimizerCalibration(name_str, maxiter, grad_meth, **opt_cal_dict)
+    return opt_cal
+
+def get_OptimizerCalibration_from_pickle(fname: str) -> OptimizerCalibration:
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    opt_cal = None
+    with open(fname, "rb") as f:
+        opt_cal = pickle.load(f)
+
+    if not isinstance(opt_cal, OptimizerCalibration):
+        raise ValueError("loaded pickle object is no OptimizerCalibration!")
+
+    return opt_cal
+
 
 class VQEOptimizer:
     def __init__(self,
@@ -153,5 +207,5 @@ class VQEOptimizer:
                      options: Union[Dict, None] = None,
                      derivative_type: None = None) -> Union[BaseEstimatorGradient, None]:
         # To-do: implement gradient objects properly
-        raise NotImplementedError
+        return None
         

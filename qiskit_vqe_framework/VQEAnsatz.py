@@ -8,6 +8,9 @@ from qiskit.circuit.library import EfficientSU2
 from qiskit.quantum_info import Statevector
 from . import Calibration as cal
 import abc
+import yaml
+import pickle
+import os
 
 class AnsatzCalibration(cal.Calibration):
     def __init__(self,
@@ -86,6 +89,15 @@ class AnsatzCalibration(cal.Calibration):
 
         return qalg_cal_dict
     
+    def to_yaml(self,
+                fname: str):
+        ansatz_cal_dict = self.to_dict()
+        if os.path.isfile(fname):
+            raise ValueError("file {} does already exist!".format(fname))
+        
+        with open(fname, "w") as f:
+            yaml.dump(ansatz_cal_dict, f)
+    
     def get_filevector(self) -> Tuple[List, List]:
         """
         Define method to write the summarized (shorted) calibration data in a list format
@@ -109,6 +121,50 @@ class AnsatzCalibration(cal.Calibration):
         data.append(self.use_custom_state_init)
                 
         return header, data
+    
+def get_AnsatzCalibration_from_yaml(fname: str) -> AnsatzCalibration:
+    
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    ansatz_cal_dict = None
+    raw_data = None
+    with open(fname, "r") as f:
+        raw_data = f.read()
+
+    ansatz_cal_dict = yaml.load(raw_data, Loader=yaml.Loader)
+    if ansatz_cal_dict is None:
+        raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
+
+    num_qubits = ansatz_cal_dict.pop("num_qubits", None)
+    if num_qubits is None:
+        raise ValueError("could not retrieve number of qubits from file!")
+    num_layers = ansatz_cal_dict.pop("num_layers", None)
+    if num_layers is None:
+        raise ValueError("could not retrieve number of layers from file!")
+    ansatz_str = ansatz_cal_dict.pop("ansatz_str", None)
+    if ansatz_str is None:
+        raise ValueError("could not retrieve ansatz_str from file!")
+
+    name = ansatz_cal_dict.pop("name", None)
+    use_custom_state_init = ansatz_cal_dict.pop("use_custom_state_init", None)
+    #print(ansatz_cal_dict)
+
+    ansatz_cal = AnsatzCalibration(num_qubits, num_layers, ansatz_str, **ansatz_cal_dict)
+    return ansatz_cal
+
+def get_AnsatzCalibration_from_pickle(fname: str) -> AnsatzCalibration:
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    ansatz_cal = None
+    with open(fname, "rb") as f:
+        ansatz_cal = pickle.load(f)
+
+    if not isinstance(ansatz_cal, AnsatzCalibration):
+        raise ValueError("loaded pickle object is no AnsatzCalibration!")
+
+    return ansatz_cal
 
 class VQEAnsatz:
     def __init__(self,

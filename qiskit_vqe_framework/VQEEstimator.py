@@ -6,11 +6,13 @@ from . import Calibration as cal
 from qiskit.primitives import BaseEstimator
 from qiskit.primitives import Estimator as TerraEstimator
 from qiskit_aer.primitives import Estimator as AerEstimator
-
-
+from qiskit_aer.noise import NoiseModel
 
 import qiskit_ibm_runtime as qir
 import copy
+import os
+import yaml
+import pickle
 
 class EstimatorCalibration(cal.Calibration):
     def __init__(self,
@@ -52,8 +54,38 @@ class EstimatorCalibration(cal.Calibration):
         est_cal_dict["estimator_options"] = est_opt
 
         return est_cal_dict
-    
 
+    def to_yaml(self,
+                fname: str):
+        # convert to dictionary
+        est_cal_dict = self.to_dict()
+        # search for noise_model (should not be contained in the yaml but pickled 
+        for key in est_cal_dict["estimator_options"].keys():
+            # check only the dictionaries in estimator options
+            if isinstance(est_cal_dict["estimator_options"][key], Dict):
+                # check if noise_model key exists
+                noise_model = est_cal_dict["estimator_options"][key].pop("noise_model", None)
+                # if noise_model is not None, replace with noise_model_str in yaml (when loaded this will be again replaced by pickled noise_model)
+                if noise_model is not None:
+
+                    fname_noise_model, yaml_ext = os.path.splitext(fname)
+                    fname_noise_model = fname_noise_model + "_"+ key + "_noise_model.pickle"
+                    
+                    if os.path.isfile(fname_noise_model):
+                        raise ValueError("file for saving noise_model {} does already exist!".format(fname_noise_model))
+                    with open(fname_noise_model, "wb") as f:
+                        pickle.dump(noise_model, f)
+
+                    est_cal_dict["estimator_options"][key]["noise_model"] = est_cal_dict["noise_model_str"]
+                    
+        # check if file already exists
+        if os.path.isfile(fname):
+            raise ValueError("file {} does already exist!".format(fname))
+
+        # dump calibration dictionary into yaml file
+        with open(fname, "w") as f:
+            yaml.dump(est_cal_dict, f)
+            
     def _validate_estimator_options(self,
                                     est_opt_in: Dict,
                                     est_prim_str: str) -> Dict:
@@ -117,7 +149,7 @@ class EstimatorCalibration(cal.Calibration):
 
             
         elif est_prim_str == "ibm_runtime":
-            sub_cat = ["optimization_level", "resilience_level", "max_execution_time", "transpilation_options", "resilience_options", "execution_options", "enviroment_options", "simulator_options"]
+            sub_cat = ["optimization_level", "resilience_level", "max_execution_time", "transpilation_options", "resilience_options", "execution_options", "environment_options", "simulator_options"]
             sub_cat.sort()
 
             est_opt_keys_sorted = sorted(list(est_opt.keys()))
@@ -143,8 +175,8 @@ class EstimatorCalibration(cal.Calibration):
                 raise ValueError("resilience options must be a dictionary")
             if not isinstance(est_opt["execution_options"], Dict):
                 raise ValueError("execution options must be a dictionary")
-            if not isinstance(est_opt["enviroment_options"], Dict):
-                raise ValueError("enviroment options must be a dictionary")
+            if not isinstance(est_opt["environment_options"], Dict):
+                raise ValueError("environment options must be a dictionary")
             if not isinstance(est_opt["simulator_options"], Dict):
                 raise ValueError("simulator options must be a dictionary")
             
@@ -238,6 +270,75 @@ class EstimatorCalibration(cal.Calibration):
 
         return header, data
 
+def get_EstimatorCalibration_from_yaml(fname: str) -> EstimatorCalibration:
+    
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    est_cal_dict = None
+    raw_data = None
+    with open(fname, "r") as f:
+        raw_data = f.read()
+
+    est_cal_dict = yaml.load(raw_data, Loader=yaml.Loader)
+    if est_cal_dict is None:
+        raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
+    
+    est_opt = est_cal_dict.pop("estimator_options", None)
+    if est_opt is None:
+        raise ValueError("could not retrieve estimator options from file!")
+    # load possible noise_model
+    for key in est_opt.keys():
+        if isinstance(est_opt[key], Dict):
+            noise_model_str = est_opt[key].get("noise_model", None)
+            if noise_model_str is not None:
+                #load possible noise model from pickle file
+                fname_noise_model, yaml_ext = os.path.splitext(fname)
+                fname_noise_model = fname_noise_model + "_"+ key + "_noise_model.pickle"
+                
+                if not os.path.isfile(fname_noise_model):
+                    raise ValueError("Unable to find pickle file to load noise_model for estimator option {}. Looked for file {}.".format(key, fname_noise_model))
+                
+                with open(fname_noise_model, "rb") as f:
+                    noise_model = pickle.load(f)
+
+                if not isinstance(noise_model, NoiseModel):
+                    raise ValueError("Loaded noise model is no qiskit_aer NoiseModel!")
+                
+                est_opt[key]["noise_model"] = noise_model
+                
+    noise_model_str = est_cal_dict.pop("noise_model_str", None)
+    if noise_model_str is None:
+        raise ValueError("could not retrieve noise model string from file!")
+    coupling_map_str = est_cal_dict.pop("coupling_map_str", None)
+    if coupling_map_str is None:
+        raise ValueError("could not retrieve coupling map string from file!")
+    est_prim_str = est_cal_dict.pop("estimator_str", None)
+    if est_prim_str is None:
+        raise ValueError("could not retrieve estimator string from file!")
+    backend_str = est_cal_dict.pop("backend_str", None)
+    if backend_str is None:
+        raise ValueError("could not retrieve backend string from file!")
+
+    name = est_cal_dict.pop("name", None)
+
+    est_cal = EstimatorCalibration(est_opt, noise_model_str, coupling_map_str, est_prim_str, backend_str)
+    return est_cal
+
+def get_EstimatorCalibration_from_pickle(fname: str) -> EstimatorCalibration:
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    est_cal = None
+    with open(fname, "rb") as f:
+        est_cal = pickle.load(f)
+
+    if not isinstance(est_cal, EstimatorCalibration):
+        raise ValueError("loaded pickle object is no EstimatorCalibration!")
+
+    return est_cal
+
+
 class VQEEstimator:
     def __init__(self,
                  estimator_parameters: EstimatorCalibration,
@@ -298,7 +399,7 @@ class VQEEstimator:
         if self._parameters.estimator_str == "aer":
             est = AerEstimator(backend_options=options_dict["backend_options"], transpile_options=options_dict["transpilation_options"], run_options=options_dict["run_options"], approximation=options_dict["approximation"], skip_transpilation=options_dict["skip_transpilation"])
         elif self._parameters.estimator_str == "ibm_runtime":
-            options = qir.options.Options(optimization_level=options_dict["optimization_level"], resilience_level=options_dict["resilience_level"], max_execution_time=options_dict["max_execution_time"], transpilation=options_dict["transpilation_options"], resilience=options_dict["resilience_options"], execution=options_dict["execution_options"], enviroment=options_dict["enviroment_options"], simulator=options_dict["simulator_options"])
+            options = qir.options.Options(optimization_level=options_dict["optimization_level"], resilience_level=options_dict["resilience_level"], max_execution_time=options_dict["max_execution_time"], transpilation=options_dict["transpilation_options"], resilience=options_dict["resilience_options"], execution=options_dict["execution_options"], environment=options_dict["environment_options"], simulator=options_dict["simulator_options"])
             est = qir.Estimator(session=self._session, options=options)
         elif self._parameters.estimator_str == "terra":
             est = TerraEstimator(options=options_dict["run_options"])
