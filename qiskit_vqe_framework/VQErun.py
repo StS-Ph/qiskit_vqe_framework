@@ -10,7 +10,7 @@ from . import VQEOptimizer as VQEO
 from . import VQEEstimator as VQEE
 from . import VQEResult as VQER
 from qiskit.algorithms.minimum_eigensolvers import VQE, NumPyMinimumEigensolver, VQEResult
-from qiskit.algorithms.algorithm_result.AlgorithmResult import MinimumEigensolverResult
+#from qiskit.algorithms.algorithm_result.AlgorithmResult import MinimumEigensolverResult
 from qiskit.quantum_info import Statevector
 from qiskit import Aer, IBMQ, execute
 from qiskit.primitives import BaseEstimator
@@ -53,14 +53,14 @@ def get_state_from_VQEResult(result: VQEResult) -> Statevector:
     # generate state via statevector simulator from optimal circuit angles
     backend_state = Aer.get_backend("statevector_simulator")
     # generate circuit with optimized angles
-    circ_final = result.optimal_circuit.bind_parameters(angles)
+    circ_final = result.optimal_circuit.bind_parameters(result.optimal_parameters)
     job = execute(circ_final, backend_state)
     psi_vqs = Statevector(job.result().get_statevector(circ_final))
 
     return psi_vqs
     
 
-def get_data_from_MinimumEigensolverResult(result: MinimumEigensolverResult) -> VQER.ResultData:
+def get_data_from_MinimumEigensolverResult(result: NumPyMinimumEigensolverResult) -> VQER.ResultData:
     # Input data types
     # - result =  qiskit.algorithms.algorithm_result.AlgorithmResult.MinimumEigensolverResult
     # extract final energy
@@ -73,14 +73,48 @@ def get_data_from_MinimumEigensolverResult(result: MinimumEigensolverResult) -> 
         
     return result_out
 
-def getOverlap(psi_vqs: Statevector,
-               psi_ED: Statevector):
+def get_overlap(psi_vqs: Statevector,
+               psi_ref: Statevector):
     # Input data types
     # - psi_vqs = qiskit.quantum_info.Statevector
     # - psi_ED = qiskit.quantum_info.Statevector
     
-    return np.abs(psi_vqs.inner(psi_ED))
+    return np.abs(psi_vqs.inner(psi_ref))
 
+def get_data_from_file(filename: str,
+                       data_row_idx: int,
+                       data_col_idcs: List[int]) -> Tuple[List,List]:
+    ## To-Do: implement this function. It should open a vqe/ed result file and extract the data defined via the row index data_row_idx and the collum indices in data_col_idcs. The data structure in the file is assumed to be a header row following several (or just one) data row in csv format. It should return the relevant data collumns as one list and the corresponding header collumns as another List (return header, data)
+    raise NotImplementedError
+
+def get_statevector_from_file(filename: str,
+                              num_qubits: int,
+                              rev_qargs: bool = False) -> Statevector:
+    # read in state vector from txt file
+    # assume data structure collum 1: real(state[:]), collum 2: imag(state[:])
+    if not filename.endswith('.txt'):
+        raise ValueError("currently only txt files are supported!")
+    try:
+        # read in raw data format from txt file
+        tmp_data = np.loadtxt(filename, comments='#', delimiter='\t')
+        # check if data has correct shape
+        if tmp_data.shape != (2**num_qubits, 2):
+            raise ValueError("data from file does not have expected shape")
+        # declare a complex state vector of correct size
+        state = np.zeros(tmp_data.shape[0], dtype='complex')
+        # write data in correct complex format into state
+        for i in range(0, tmp_data.shape[0]):
+            state[i] = complex(tmp_data[i, 0], tmp_data[i, 1])
+        
+        if rev_qargs:
+            # if ED results are generated outside of qiskit, e.g. julia the qubit labeling can be reversed
+            return Statevector(state).reverse_qargs()
+        else:
+            return Statevector(state)
+            
+    except FileNotFound:
+        raise ValueError("could not find state vector file!")
+    
 def run_exact_diagonalization(target_model: VQETM.VQETargetModel) -> Tuple[VQER.ReferenceResult, Statevector]:
     # generate hamiltonian with all penalties
     H = target_model.hamiltonian
@@ -198,6 +232,9 @@ def run_vqe(vqe_estimator: VQEE.VQEEstimator,
 
     if print_status:
         print("optimization finished:")
+        ref_result_data_dict = ref_result.data.to_dict()
+        for key, val in ref_result_data_dict.items():
+            print("- {}_ref = {}".format(key, val))
         result_data_dict = result_data.to_dict()
         for key, val in result_data_dict.items():
             print("- {} = {}".format(key, val))
