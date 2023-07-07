@@ -64,34 +64,34 @@ class TestVQEEstimatorCalibration(unittest.TestCase):
 
         self.assertRaises(ValueError, self.estimator_cal._validate_estimator_options, est_opt, est_prim_str)
 
-        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {}, "enviroment_options": {}, "simulator_options": {}}
+        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {}, "environment_options": {}, "simulator_options": {}}
 
         val_est_opt = self.estimator_cal._validate_estimator_options(est_opt, est_prim_str)
 
         self.assertEqual(val_est_opt["resilience_level"], 0)
         self.assertEqual(val_est_opt["optimization_level"], 0)
 
-        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": None, "resilience_options": {}, "execution_options": {}, "enviroment_options": {}, "simulator_options": {}}
+        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": None, "resilience_options": {}, "execution_options": {}, "environment_options": {}, "simulator_options": {}}
 
         self.assertRaises(ValueError, self.estimator_cal._validate_estimator_options, est_opt, est_prim_str)
 
-        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": None, "execution_options": {}, "enviroment_options": {}, "simulator_options": {}}
+        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": None, "execution_options": {}, "environment_options": {}, "simulator_options": {}}
 
         self.assertRaises(ValueError, self.estimator_cal._validate_estimator_options, est_opt, est_prim_str)
 
-        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": None, "enviroment_options": {}, "simulator_options": {}}
+        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": None, "environment_options": {}, "simulator_options": {}}
 
         self.assertRaises(ValueError, self.estimator_cal._validate_estimator_options, est_opt, est_prim_str)
 
-        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {}, "enviroment_options": None, "simulator_options": {}}
+        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {}, "environment_options": None, "simulator_options": {}}
 
         self.assertRaises(ValueError, self.estimator_cal._validate_estimator_options, est_opt, est_prim_str)
 
-        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {}, "enviroment_options": {}, "simulator_options": None}
+        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {}, "environment_options": {}, "simulator_options": None}
 
         self.assertRaises(ValueError, self.estimator_cal._validate_estimator_options, est_opt, est_prim_str)
 
-        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {}, "enviroment_options": {}, "simulator_options": {}}
+        est_opt = {"optimization_level": None, "resilience_level": None, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {}, "environment_options": {}, "simulator_options": {}}
 
         val_est_opt = self.estimator_cal._validate_estimator_options(est_opt, est_prim_str)
 
@@ -134,7 +134,7 @@ class TestVQEEstimator(unittest.TestCase):
 
 
     def test_init(self):
-        est_opt = {"optimization_level": 0, "resilience_level": 0, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {}, "enviroment_options": {}, "simulator_options": {}}
+        est_opt = {"optimization_level": 0, "resilience_level": 0, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {}, "environment_options": {}, "simulator_options": {}}
         
         est_cal = VQEE.EstimatorCalibration(est_opt, "None", "None", "ibm_runtime", "ibm_runtime_qasm")
 
@@ -156,7 +156,7 @@ class TestVQEEstimator(unittest.TestCase):
         self.assertEqual(self.vqe_estimator.parameters.estimator_options, new_est_opt)
     def test_get_estimator_ibm_runtime(self):
 
-        est_opt = {"optimization_level": 1, "resilience_level": 0, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {"shots": 4000}, "enviroment_options": {}, "simulator_options": {}}
+        est_opt = {"optimization_level": 1, "resilience_level": 0, "max_execution_time": None, "transpilation_options": {}, "resilience_options": {}, "execution_options": {"shots": 4000}, "environment_options": {}, "simulator_options": {}}
         backend_str = "ibmq_qasm_simulator"
         est_cal = VQEE.EstimatorCalibration(est_opt, "None", "None", "ibm_runtime", backend_str)
         service = QiskitRuntimeService()
