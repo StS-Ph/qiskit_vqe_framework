@@ -4,6 +4,8 @@ import numpy as np
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from collections.abc import Iterable, Sequence
 import copy
+import os
+import pickle
 
 class Calibration(metaclass=abc.ABCMeta):
     def __init__(self,
@@ -23,7 +25,15 @@ class Calibration(metaclass=abc.ABCMeta):
         return out
 
     def to_dict(self) -> Dict:
-        return copy.copy(self.__dict__)
+        return copy.deepcopy(self.__dict__)
+
+    def to_pickle(self,
+                  fname: str):
+        if os.path.isfile(fname):
+            raise ValueError("file {} does already exist!".format(fname))
+
+        with open(fname, "wb") as f:
+            pickle.dump(self, f)
 
     @abc.abstractmethod
     def get_filevector(self) -> Tuple[List, List]:
