@@ -48,6 +48,10 @@ class RelativeEnergyChecker(TerminationChecker):
                  buffer_length: int,
                  considered_values_length: int,
                  epsilon: float) -> None:
+        # buffer_length: maximal Length of history buffer
+        # considered_values_length: minimal number of values in history buffer to allow calculation of relative energy change
+        # epsilon: relative energy change threshold
+        
         if epsilon < 0.0:
             raise ValueError("tolerance for termination check {} must be non-negative!".format(epsilon))
         self.epsilon = epsilon
@@ -88,7 +92,7 @@ class RelativeEnergyChecker(TerminationChecker):
             delta = np.abs((new-old)/new)
             relative_change.append(delta)
 
-        return relative_change[-self.considered_values_length:]
+        return relative_change
 
     def __repr__(self):
         out = "RelativeEnergyChecker(buffer_length={}, considered_values_length={}, epsilon={})".format(self.buffer_length, self.considered_values_length, self.epsilon)
@@ -126,3 +130,38 @@ class LinearFitChecker(TerminationChecker):
     def __repr__(self):
         out = "LinearFitChecker(buffer_length={}, epsilon={})".format(self.buffer_length, self.epsilon)
         return out
+
+def get_termination_checker_from_name(checker_name: str,
+                                      **kwargs) -> TerminationChecker:
+    if checker_name == "relative_energy_change":
+        buffer_length = kwargs.get("buffer_length", None)
+
+        if buffer_length is None:
+            raise ValueError("Missing buffer_length argument!")
+
+        considered_values_length = kwargs.get("considered_values_length", None)
+
+        if considered_values_length is None:
+            raise ValueError("Missing considered_values_length argument!")
+
+        epsilon = kwargs.get("epsilon", None)
+
+        if epsilon is None:
+            raise ValueError("Missing epsilon argument!")
+        
+        return RelativeEnergyChecker(buffer_length, considered_values_length, epsilon)
+    elif checker_name == "linear_fit":
+        buffer_length = kwargs.get("buffer_length", None)
+
+        if buffer_length is None:
+            raise ValueError("Missing buffer_length argument!")
+
+        epsilon = kwargs.get("epsilon", None)
+
+        if epsilon is None:
+            raise ValueError("Missing epsilon argument!")
+        
+        return LinearFitChecker(buffer_length, epsilon)
+    else:
+        raise ValueError("unkown TerminationChecker name {}!".format(checker_name))
+        
