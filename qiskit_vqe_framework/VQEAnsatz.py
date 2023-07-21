@@ -198,6 +198,23 @@ class VQEAnsatz:
         Define method to generate the vqe ansatz circuit
         """
 
+    def _get_circuit_from_pickle(self,
+                               fname: str) -> QuantumCircuit:
+        """
+        Method to load a QuantumCircuit object from a given pickle file.
+        """
+        if not os.path.isfile(fname):
+            raise ValueError("file {} does not exist!".format(fname))
+
+        circ = None
+        with open(fname, "rb") as f:
+            circ = pickle.load(f)
+        
+        if not isinstance(circ, QuantumCircuit):
+            raise ValueError("loaded pickle object is no QuantumCircuit!")
+        
+        return circ
+        
     def __repr__(self):
         out = "VQEAnsatz(parameters={})".format(self.parameters)
 
