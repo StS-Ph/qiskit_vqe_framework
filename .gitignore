@@ -34,9 +34,13 @@ profile_default/
 ipython_config.py
 
 # Python 
-*/__pycache__/*
+*/__pycache__/
 */*.pyc
 *.pyc
+
+# Packaging
+*.egg-info/
+*.egg
 
 # Synology DS
 *.DS_Store*
