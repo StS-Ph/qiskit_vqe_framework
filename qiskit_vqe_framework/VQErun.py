@@ -14,6 +14,8 @@ from qiskit.algorithms.minimum_eigensolvers import VQE, NumPyMinimumEigensolver,
 from qiskit.quantum_info import Statevector
 from qiskit import Aer, IBMQ, execute
 from qiskit.primitives import BaseEstimator
+from qiskit.quantum_info import PauliList, SparsePauliOp
+from qiskit.opflow import PauliSumOp
 
 def get_data_from_VQEResult(result: VQEResult,
                             opt_converged: bool,
@@ -274,3 +276,90 @@ def get_iresults_filevector(iresults_dict: Dict) -> Tuple[List, List]:
     return header, data
     
         
+def inference_run(inf_estimator: VQEE.VQEEstimator,
+                  target_model: VQETM.VQETargetModel,
+                  inf_ansatz: VQEA.VQEAnsatz,
+                  vqe_result: VQER.VQEResult,
+                  angles: Union[Sequence[float], Dict, None] = None) -> VQER.InferenceResult:
+    # get angles from vqe_result
+    if angles == None:
+        angles = vqe_result.data.angles
+    angles_to_file = copy.copy(vqe_result.data.angles)
+    # convert dictionary to list
+    if isinstance(angles, Dict):
+        angles = list(angles.values())
+    # calculate energy exp_val
+    try:
+        job = inf_estimator.estimator.run(inf_ansatz.circuit, target_model.hamiltonian, angles)
+        result = job.result()
+    except Exception as exc:
+        raise RuntimeError("the primitive job failed to evaluate the energy!") from exc
+
+    values = result.values
+    energy = values[0] if len(values) == 1 else values
+
+    metadata_energy = result.metadata
+
+    # calc obsevable exp_vals
+    if target_model.parameters.meas_aux_ops:
+        observables = target_model.aux_ops
+    else:
+        observables = {}
+
+    # list of all Operators
+    observables_list = list(observables.values())
+    
+    if len(observables_list) > 0:
+        # convert all zero elements in operator list to a indentity PauliSumOp
+        observables_list = handle_zero_ops(observables_list)
+        # create a list of similar length as observable list, which carries the ansatz circuit at each index
+        circuit_list = [inf_ansatz.circuit.copy()] * len(observables)
+        # create list of parameter values
+        angles_list = [angles] * len(observables)
+            
+        try:
+            # eval the observables 
+            estimator_job = inf_estimator.estimator.run(circuit_list, observables_list, angles_list)
+            # extract the expectation values
+            expectation_values = estimator_job.result().values
+        except Exception as exc:
+            raise RuntimeError("The primitive job failed!") from exc
+
+        # extract estimator metadata
+        metadata = estimator_job.result().metadata
+        
+        # zip means and metadata into tuples
+        observables_results = list(zip(expectation_values, metadata))
+    else:
+        observables_results = []
+
+    # construct result data object
+    result_data = VQER.ResultData(energy.real)
+
+    inf_result_metadata = {"energy_metadata": metadata_energy}
+    key_value_iterator = zip(observables.keys(), observables_results)
+    
+    for key, value in key_value_iterator:
+        setattr(result_data, key, value[0])
+        inf_result_metadata[key+"_metadata"] = value[1]
+        # setattr(result_data, key+"_metadata", value[1])
+
+    setattr(result_data, "angles", angles_to_file)
+
+    inf_result = VQER.InferenceResult(result_data, [target_model.parameters, inf_ansatz.parameters, inf_estimator.parameters], vqe_result, inf_result_metadata)
+    return inf_result
+
+def handle_zero_ops(observables_list: List[Union[SparsePauliOp, PauliSumOp]]) -> List[Union[SparsePauliOp, PauliSumOp]]:
+    
+    """Replaces all occurrence of operators equal to 0 in the list with an equivalent ``PauliSumOp``
+    operator."""
+    if observables_list:
+        # identity operator
+        zero_op = PauliSumOp.from_list([("I" * observables_list[0].num_qubits, 0)])
+        # iterate through all observables
+        for ind, observable in enumerate(observables_list):
+            # check if the current observable is 0
+            if observable == 0:
+                # if so replace it by identity PauliSumOp
+                observables_list[ind] = zero_op
+    return observables_list
