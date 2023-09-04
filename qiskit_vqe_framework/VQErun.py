@@ -9,7 +9,7 @@ from . import VQETargetModel as VQETM
 from . import VQEOptimizer as VQEO
 from . import VQEEstimator as VQEE
 from . import VQEResult as VQER
-from qiskit.algorithms.minimum_eigensolvers import VQE, NumPyMinimumEigensolver, VQEResult
+from qiskit.algorithms.minimum_eigensolvers import VQE, NumPyMinimumEigensolver, VQEResult, NumPyMinimumEigensolverResult
 #from qiskit.algorithms.algorithm_result.AlgorithmResult import MinimumEigensolverResult
 from qiskit.quantum_info import Statevector
 from qiskit import Aer, IBMQ, execute
@@ -114,7 +114,7 @@ def get_statevector_from_file(filename: str,
         else:
             return Statevector(state)
             
-    except FileNotFound:
+    except FileNotFoundError:
         raise ValueError("could not find state vector file!")
     
 def run_exact_diagonalization(target_model: VQETM.VQETargetModel) -> Tuple[VQER.ReferenceResult, Statevector]:
