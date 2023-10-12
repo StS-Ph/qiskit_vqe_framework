@@ -61,6 +61,17 @@ class ModelCalibration(cal.Calibration):
             data.append(val)
 
         return header, data
+    
+def get_ModelCalibration_from_dict(model_cal_dict: dict) -> ModelCalibration:
+    
+    model_name = model_cal_dict.pop("model_name", None)
+    if model_name is None:
+        raise ValueError("could not retrieve number of qubits from file!")
+    
+    name = model_cal_dict.pop("name", None)
+
+    model_cal = ModelCalibration(model_name, **model_cal_dict)
+    return model_cal
 
 def get_ModelCalibration_from_yaml(fname: str) -> ModelCalibration:
     
@@ -76,14 +87,7 @@ def get_ModelCalibration_from_yaml(fname: str) -> ModelCalibration:
     if model_cal_dict is None:
         raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
 
-    model_name = model_cal_dict.pop("model_name", None)
-    if model_name is None:
-        raise ValueError("could not retrieve number of qubits from file!")
-    
-    name = model_cal_dict.pop("name", None)
-
-    model_cal = ModelCalibration(model_name, **model_cal_dict)
-    return model_cal
+    return get_ModelCalibration_from_dict(model_cal_dict)
 
 def get_ModelCalibration_from_pickle(fname: str) -> ModelCalibration:
     if not os.path.isfile(fname):
@@ -138,7 +142,7 @@ class VQETargetModel:
         return model_dict
 
     def update_parameters(self,
-                          new_model_parameters: MFSCalibration) -> None:
+                          new_model_parameters: ModelCalibration) -> None:
         self.parameters = new_model_parameters
 
     def _update_operators(self) -> None:

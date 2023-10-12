@@ -69,7 +69,7 @@ class EstimatorCalibration(cal.Calibration):
                 if noise_model is not None:
 
                     fname_noise_model, yaml_ext = os.path.splitext(fname)
-                    fname_noise_model = fname_noise_model + "_"+ key + "_noise_model.pickle"
+                    fname_noise_model = fname_noise_model + "_noise_model.pickle"
                     
                     if os.path.isfile(fname_noise_model):
                         raise ValueError("file for saving noise_model {} does already exist!".format(fname_noise_model))
@@ -269,21 +269,10 @@ class EstimatorCalibration(cal.Calibration):
         data.append(self.coupling_map_str)
 
         return header, data
-
-def get_EstimatorCalibration_from_yaml(fname: str) -> EstimatorCalibration:
     
-    if not os.path.isfile(fname):
-        raise ValueError("file {} does not exist!".format(fname))
+def get_EstimatorCalibration_from_dict(est_cal_dict: dict,
+                                       fname_noise_model: Union[str, None] = None) -> EstimatorCalibration:
 
-    est_cal_dict = None
-    raw_data = None
-    with open(fname, "r") as f:
-        raw_data = f.read()
-
-    est_cal_dict = yaml.load(raw_data, Loader=yaml.Loader)
-    if est_cal_dict is None:
-        raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
-    
     est_opt = est_cal_dict.pop("estimator_options", None)
     if est_opt is None:
         raise ValueError("could not retrieve estimator options from file!")
@@ -292,9 +281,6 @@ def get_EstimatorCalibration_from_yaml(fname: str) -> EstimatorCalibration:
         if isinstance(est_opt[key], Dict):
             noise_model_str = est_opt[key].get("noise_model", None)
             if noise_model_str is not None:
-                #load possible noise model from pickle file
-                fname_noise_model, yaml_ext = os.path.splitext(fname)
-                fname_noise_model = fname_noise_model + "_"+ key + "_noise_model.pickle"
                 
                 if not os.path.isfile(fname_noise_model):
                     raise ValueError("Unable to find pickle file to load noise_model for estimator option {}. Looked for file {}.".format(key, fname_noise_model))
@@ -324,6 +310,28 @@ def get_EstimatorCalibration_from_yaml(fname: str) -> EstimatorCalibration:
 
     est_cal = EstimatorCalibration(est_opt, noise_model_str, coupling_map_str, est_prim_str, backend_str)
     return est_cal
+
+def get_EstimatorCalibration_from_yaml(fname: str) -> EstimatorCalibration:
+    
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    est_cal_dict = None
+    raw_data = None
+    with open(fname, "r") as f:
+        raw_data = f.read()
+
+    est_cal_dict = yaml.load(raw_data, Loader=yaml.Loader)
+    if est_cal_dict is None:
+        raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
+    
+    #load possible noise model from pickle file
+    fname_noise_model, yaml_ext = os.path.splitext(fname)
+    fname_noise_model = fname_noise_model + "_noise_model.pickle"
+                
+
+    return get_EstimatorCalibration_from_dict(est_cal_dict)
+    
 
 def get_EstimatorCalibration_from_pickle(fname: str) -> EstimatorCalibration:
     if not os.path.isfile(fname):

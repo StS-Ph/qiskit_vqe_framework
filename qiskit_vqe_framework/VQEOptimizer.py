@@ -109,20 +109,8 @@ class OptimizerCalibration(cal.Calibration):
             data.append(self.termination_checker.name)
 
         return header, data
-
-def get_OptimizerCalibration_from_yaml(fname: str) -> OptimizerCalibration:
     
-    if not os.path.isfile(fname):
-        raise ValueError("file {} does not exist!".format(fname))
-
-    opt_cal_dict = None
-    raw_data = None
-    with open(fname, "r") as f:
-        raw_data = f.read()
-
-    opt_cal_dict = yaml.load(raw_data, Loader=yaml.Loader)
-    if opt_cal_dict is None:
-        raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
+def get_OptimizerCalibration_from_dict(opt_cal_dict: dict) -> OptimizerCalibration:
     
     name_str = opt_cal_dict.pop("optimizer_name", None)
     if name_str is None:
@@ -140,6 +128,22 @@ def get_OptimizerCalibration_from_yaml(fname: str) -> OptimizerCalibration:
 
     opt_cal = OptimizerCalibration(name_str, maxiter, grad_meth, **opt_cal_dict)
     return opt_cal
+
+def get_OptimizerCalibration_from_yaml(fname: str) -> OptimizerCalibration:
+    
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    opt_cal_dict = None
+    raw_data = None
+    with open(fname, "r") as f:
+        raw_data = f.read()
+
+    opt_cal_dict = yaml.load(raw_data, Loader=yaml.Loader)
+    if opt_cal_dict is None:
+        raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
+    
+    return get_OptimizerCalibration_from_dict(opt_cal_dict)
 
 def get_OptimizerCalibration_from_pickle(fname: str) -> OptimizerCalibration:
     if not os.path.isfile(fname):

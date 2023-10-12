@@ -122,19 +122,7 @@ class AnsatzCalibration(cal.Calibration):
                 
         return header, data
     
-def get_AnsatzCalibration_from_yaml(fname: str) -> AnsatzCalibration:
-    
-    if not os.path.isfile(fname):
-        raise ValueError("file {} does not exist!".format(fname))
-
-    ansatz_cal_dict = None
-    raw_data = None
-    with open(fname, "r") as f:
-        raw_data = f.read()
-
-    ansatz_cal_dict = yaml.load(raw_data, Loader=yaml.Loader)
-    if ansatz_cal_dict is None:
-        raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
+def get_AnsatzCalibration_from_dict(ansatz_cal_dict: dict) -> AnsatzCalibration:
 
     num_qubits = ansatz_cal_dict.pop("num_qubits", None)
     if num_qubits is None:
@@ -152,6 +140,23 @@ def get_AnsatzCalibration_from_yaml(fname: str) -> AnsatzCalibration:
 
     ansatz_cal = AnsatzCalibration(num_qubits, num_layers, ansatz_str, **ansatz_cal_dict)
     return ansatz_cal
+
+def get_AnsatzCalibration_from_yaml(fname: str) -> AnsatzCalibration:
+    
+    if not os.path.isfile(fname):
+        raise ValueError("file {} does not exist!".format(fname))
+
+    ansatz_cal_dict = None
+    raw_data = None
+    with open(fname, "r") as f:
+        raw_data = f.read()
+
+    ansatz_cal_dict = yaml.load(raw_data, Loader=yaml.Loader)
+    if ansatz_cal_dict is None:
+        raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
+    
+    return get_AnsatzCalibration_from_dict(ansatz_cal_dict)
+    
 
 def get_AnsatzCalibration_from_pickle(fname: str) -> AnsatzCalibration:
     if not os.path.isfile(fname):
@@ -186,7 +191,7 @@ class VQEAnsatz:
         return self._circuit
 
     def update_parameters(self,
-                          new_ansatz_parameters: QAlgCalibration) -> None:
+                          new_ansatz_parameters: AnsatzCalibration) -> None:
         self.parameters = new_ansatz_parameters
 
     def _update_circuit(self) -> None:
