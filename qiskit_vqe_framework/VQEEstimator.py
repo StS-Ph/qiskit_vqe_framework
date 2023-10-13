@@ -76,7 +76,8 @@ class EstimatorCalibration(cal.Calibration):
                     with open(fname_noise_model, "wb") as f:
                         pickle.dump(noise_model, f)
 
-                    est_cal_dict["estimator_options"][key]["noise_model"] = est_cal_dict["noise_model_str"]
+                    # est_cal_dict["estimator_options"][key]["noise_model"] = est_cal_dict["noise_model_str"]
+                    est_cal_dict["estimator_options"][key]["noise_model"] = fname_noise_model
                     
         # check if file already exists
         if os.path.isfile(fname):
@@ -270,32 +271,27 @@ class EstimatorCalibration(cal.Calibration):
 
         return header, data
     
-def get_EstimatorCalibration_from_dict(est_cal_dict: dict,
-                                       fname_noise_model: Union[str, None] = None) -> EstimatorCalibration:
+def get_EstimatorCalibration_from_dict(est_cal_dict: dict) -> EstimatorCalibration:
 
     est_opt = est_cal_dict.pop("estimator_options", None)
     if est_opt is None:
-        raise ValueError("could not retrieve estimator options from file!")
-    # load possible noise_model
-    for key in est_opt.keys():
-        if isinstance(est_opt[key], Dict):
-            noise_model_str = est_opt[key].get("noise_model", None)
-            if noise_model_str is not None:
-                
-                if not os.path.isfile(fname_noise_model):
-                    raise ValueError("Unable to find pickle file to load noise_model for estimator option {}. Looked for file {}.".format(key, fname_noise_model))
-                
-                with open(fname_noise_model, "rb") as f:
-                    noise_model = pickle.load(f)
-
-                if not isinstance(noise_model, NoiseModel):
-                    raise ValueError("Loaded noise model is no qiskit_aer NoiseModel!")
-                
-                est_opt[key]["noise_model"] = noise_model
-                
+        raise ValueError("could not retrieve estimator options!")
+    # check if noise_model is either None or a valid qiskit aer NoiseModel object
     noise_model_str = est_cal_dict.pop("noise_model_str", None)
     if noise_model_str is None:
         raise ValueError("could not retrieve noise model string from file!")
+    
+    for key in est_opt.keys():
+        if isinstance(est_opt[key], Dict):
+            noise_model = est_opt[key].get("noise_model", None)
+            if noise_model is not None:
+                if not isinstance(noise_model, NoiseModel):
+                    raise ValueError("Loaded noise model is no qiskit_aer NoiseModel!")
+                if noise_model_str == "None":
+                    raise ValueError("Noise model is a valid aer NoiseModel but noise model string equals string None!")
+            elif noise_model_str != "None":
+                raise ValueError("Noise model is None but noise model string {} does not match string None.".format(noise_model_str))
+                
     coupling_map_str = est_cal_dict.pop("coupling_map_str", None)
     if coupling_map_str is None:
         raise ValueError("could not retrieve coupling map string from file!")
@@ -325,10 +321,26 @@ def get_EstimatorCalibration_from_yaml(fname: str) -> EstimatorCalibration:
     if est_cal_dict is None:
         raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
     
-    #load possible noise model from pickle file
-    fname_noise_model, yaml_ext = os.path.splitext(fname)
-    fname_noise_model = fname_noise_model + "_noise_model.pickle"
+    est_opt = est_cal_dict.get("estimator_options", None)
+    if est_opt is None:
+        raise ValueError("could not retrieve estimator options!")
+    
+    # load possible noise_model
+    for key in est_opt.keys():
+        if isinstance(est_opt[key], Dict):
+            fname_noise_model = est_opt[key].get("noise_model", None)
+            if fname_noise_model is not None:
                 
+                if not os.path.isfile(fname_noise_model):
+                    raise ValueError("Unable to find pickle file to load noise_model for estimator option {}. Looked for file {}.".format(key, fname_noise_model))
+                
+                with open(fname_noise_model, "rb") as f:
+                    noise_model = pickle.load(f)
+
+                if not isinstance(noise_model, NoiseModel):
+                    raise ValueError("Loaded noise model is no qiskit_aer NoiseModel!")
+                
+                est_cal_dict["estimator_options"][key]["noise_model"] = noise_model
 
     return get_EstimatorCalibration_from_dict(est_cal_dict)
     
