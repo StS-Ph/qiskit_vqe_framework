@@ -2,6 +2,8 @@ import abc
 import numpy as np
 from collections.abc import Iterable, Sequence
 from typing import Union
+import copy
+import warnings
 
 class TerminationChecker(metaclass=abc.ABCMeta):
     def __init__(self,
@@ -31,6 +33,9 @@ class TerminationChecker(metaclass=abc.ABCMeta):
             return self._check_termination(nfev, parameters, value, stepsize, accepted)
         # otherwise return false
         return False
+    
+    def to_dict(self) -> dict:
+        return copy.deepcopy(self.__dict__)
             
     @abc.abstractmethod
     def _check_termination(self,
@@ -133,6 +138,11 @@ class LinearFitChecker(TerminationChecker):
 
 def get_termination_checker_from_name(checker_name: str,
                                       **kwargs) -> TerminationChecker:
+    vals = kwargs.get("values", None)
+
+    if (vals is not None) and (len(vals) != 0):
+        warnings.warn("Values list of to-be-generated termination checker is not empty! Newly generated termination checker will disregard those values.")
+
     if checker_name == "relative_energy_change":
         buffer_length = kwargs.get("buffer_length", None)
 
