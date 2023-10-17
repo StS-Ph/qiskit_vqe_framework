@@ -19,12 +19,14 @@ class EstimatorCalibration(cal.Calibration):
                  est_opt: Dict,
                  noise_model_str: str,
                  coupling_map_str: str,
+                 basis_gates_str: str,
                  est_prim_str: str,
                  backend_str: str) -> None:
         super().__init__("EstimatorCalibration")
         self._estimator_options = self._validate_estimator_options(est_opt, est_prim_str)
         self.noise_model_str = noise_model_str
         self.coupling_map_str = coupling_map_str
+        self.basis_gates_str = basis_gates_str
         self._estimator_str = est_prim_str
         self.backend_str = backend_str
 
@@ -41,7 +43,7 @@ class EstimatorCalibration(cal.Calibration):
         return self._estimator_str
 
     def __repr__(self) -> str:
-        out = "EstimatorCalibration(est_opt={}, noise_model_str={}, coupling_map_str={}, est_prim_str={}, backend_str={})".format(self._estimator_options, self.noise_model_str, self.coupling_map_str, self.estimator_str, self.backend_str)
+        out = "EstimatorCalibration(est_opt={}, noise_model_str={}, coupling_map_str={}, basis_gates_str={}, est_prim_str={}, backend_str={})".format(self._estimator_options, self.noise_model_str, self.coupling_map_str, self.basis_gates_str, self.estimator_str, self.backend_str)
 
         return out
 
@@ -269,6 +271,10 @@ class EstimatorCalibration(cal.Calibration):
         header.append("coupling_map")
         data.append(self.coupling_map_str)
 
+        header.append("basis_gates")
+        data.append(self.basis_gates_str)
+        
+
         return header, data
     
 def get_EstimatorCalibration_from_dict(est_cal_dict: dict) -> EstimatorCalibration:
@@ -295,6 +301,10 @@ def get_EstimatorCalibration_from_dict(est_cal_dict: dict) -> EstimatorCalibrati
     coupling_map_str = est_cal_dict.pop("coupling_map_str", None)
     if coupling_map_str is None:
         raise ValueError("could not retrieve coupling map string from file!")
+    basis_gates_str = est_cal_dict.pop("basis_gates_str", None)
+    if basis_gates_str is None:
+        raise ValueError("could not retrieve basis gates string from file!")
+    
     est_prim_str = est_cal_dict.pop("estimator_str", None)
     if est_prim_str is None:
         raise ValueError("could not retrieve estimator string from file!")
@@ -304,7 +314,7 @@ def get_EstimatorCalibration_from_dict(est_cal_dict: dict) -> EstimatorCalibrati
 
     name = est_cal_dict.pop("name", None)
 
-    est_cal = EstimatorCalibration(est_opt, noise_model_str, coupling_map_str, est_prim_str, backend_str)
+    est_cal = EstimatorCalibration(est_opt, noise_model_str, coupling_map_str, basis_gates_str, est_prim_str, backend_str)
     return est_cal
 
 def get_EstimatorCalibration_from_yaml(fname: str) -> EstimatorCalibration:
