@@ -74,6 +74,10 @@ class OptimizerCalibration(cal.Calibration):
     def to_yaml(self,
                 fname: str):
         opt_cal_dict = self.to_dict()
+        term_checker = opt_cal_dict.pop("termination_checker", None)
+        if term_checker is not None:
+            opt_cal_dict["termination_checker"] = term_checker.to_dict()
+
         if os.path.isfile(fname):
             raise ValueError("file {} does already exist!".format(fname))
         
@@ -143,6 +147,12 @@ def get_OptimizerCalibration_from_yaml(fname: str) -> OptimizerCalibration:
     if opt_cal_dict is None:
         raise ValueError("Something went wrong while reading in yml text file! resulting dictionary is empty!")
     
+    term_checker_dict = opt_cal_dict.pop("termination_checker")
+    if term_checker_dict is not None:
+        term_checker_name = term_checker_dict.pop("name")
+        term_checker = tc.get_termination_checker_from_name(term_checker_name, term_checker_dict)
+        opt_cal_dict["termination_checker"] = term_checker
+
     return get_OptimizerCalibration_from_dict(opt_cal_dict)
 
 def get_OptimizerCalibration_from_pickle(fname: str) -> OptimizerCalibration:
