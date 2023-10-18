@@ -145,6 +145,18 @@ def run_exact_diagonalization(target_model: VQETM.VQETargetModel) -> Tuple[VQER.
 
     return result_out, psi_gs
     
+def get_vqe_cal_from_file(fname_ansatz_cal: str,
+                          fname_estimator_cal: str,
+                          fname_optimizer_cal: str,
+                          fname_target_model_cal: str) -> Tuple[VQEA.AnsatzCalibration, VQETM.ModelCalibration, VQEE.EstimatorCalibration, VQEO.OptimizerCalibration]:
+    ansatz_cal = VQEA.get_AnsatzCalibration_from_yaml(fname_ansatz_cal)
+    estimator_cal = VQEE.get_EstimatorCalibration_from_yaml(fname_estimator_cal)
+    optimizer_cal = VQEO.get_OptimizerCalibration_from_yaml(fname_optimizer_cal)
+    target_model_cal = VQETM.get_ModelCalibration_from_yaml(fname_target_model_cal)
+
+    return ansatz_cal, target_model_cal, estimator_cal, optimizer_cal
+
+
 def run_vqe(vqe_estimator: VQEE.VQEEstimator,
             target_model: VQETM.VQETargetModel,
             vqe_ansatz: VQEA.VQEAnsatz,
