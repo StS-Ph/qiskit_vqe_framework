@@ -57,8 +57,13 @@ class ModelCalibration(cal.Calibration):
         cal_name = attr_dict.pop("name", None)
 
         for key, val in attr_dict.items():
-            header.append(key)
-            data.append(val)
+            if isinstance(val, Sequence):
+                for i in range(len(val)):
+                    header.append(key+str(i))
+                    data.append(val[i])
+            else:
+                header.append(key)
+                data.append(val)
 
         return header, data
     
