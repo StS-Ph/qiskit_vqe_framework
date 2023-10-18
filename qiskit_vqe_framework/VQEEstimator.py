@@ -287,6 +287,7 @@ def get_EstimatorCalibration_from_dict(est_cal_dict: dict) -> EstimatorCalibrati
     if noise_model_str is None:
         raise ValueError("could not retrieve noise model string from file!")
     
+    valid_noise_model_found = False
     for key in est_opt.keys():
         if isinstance(est_opt[key], Dict):
             noise_model = est_opt[key].get("noise_model", None)
@@ -295,9 +296,12 @@ def get_EstimatorCalibration_from_dict(est_cal_dict: dict) -> EstimatorCalibrati
                     raise ValueError("Loaded noise model is no qiskit_aer NoiseModel!")
                 if noise_model_str == "None":
                     raise ValueError("Noise model is a valid aer NoiseModel but noise model string equals string None!")
-            elif noise_model_str != "None":
-                raise ValueError("Noise model is None but noise model string {} does not match string None.".format(noise_model_str))
-                
+                valid_noise_model_found = True
+
+    if not valid_noise_model_found:
+        if noise_model_str != "None":
+            raise ValueError("Noise model is None but noise model string {} does not match string None.".format(noise_model_str))
+        
     coupling_map_str = est_cal_dict.pop("coupling_map_str", None)
     if coupling_map_str is None:
         raise ValueError("could not retrieve coupling map string from file!")
