@@ -76,7 +76,13 @@ class OptimizerCalibration(cal.Calibration):
         opt_cal_dict = self.to_dict()
         term_checker = opt_cal_dict.pop("termination_checker", None)
         if term_checker is not None:
-            opt_cal_dict["termination_checker"] = term_checker.to_dict()
+            term_checker_dict = term_checker.to_dict()
+            vals = term_checker_dict.pop("values", [])
+            if isinstance(vals, np.ndarray):
+                term_checker_dict["values"] = vals.tolist()
+            else:
+                term_checker_dict["values"] = []
+            opt_cal_dict["termination_checker"] = term_checker_dict
 
         if os.path.isfile(fname):
             raise ValueError("file {} does already exist!".format(fname))
@@ -150,7 +156,7 @@ def get_OptimizerCalibration_from_yaml(fname: str) -> OptimizerCalibration:
     term_checker_dict = opt_cal_dict.pop("termination_checker")
     if term_checker_dict is not None:
         term_checker_name = term_checker_dict.pop("name")
-        term_checker = tc.get_termination_checker_from_name(term_checker_name, term_checker_dict)
+        term_checker = tc.get_termination_checker_from_name(term_checker_name, **term_checker_dict)
         opt_cal_dict["termination_checker"] = term_checker
 
     return get_OptimizerCalibration_from_dict(opt_cal_dict)
