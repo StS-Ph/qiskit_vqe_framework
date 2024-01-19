@@ -98,5 +98,5 @@ The `InferenceResult` class expects a `ResultData` object, a list of `Calibratio
 ## Relavant qiskit links
 
 [vqe-ibm-runtime-tutorial](https://qiskit.org/ecosystem/ibm-runtime/tutorials/vqe_with_estimator.html)
-[Qiskit VQE classe](https://qiskit.org/ecosystem/algorithms/stubs/qiskit_algorithms.VQE.html)
+[Qiskit VQE class](https://qiskit.org/ecosystem/algorithms/stubs/qiskit_algorithms.VQE.html)
 
