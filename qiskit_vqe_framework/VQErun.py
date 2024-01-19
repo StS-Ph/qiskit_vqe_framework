@@ -139,7 +139,7 @@ def run_exact_diagonalization(target_model: VQETM.VQETargetModel) -> Tuple[VQER.
     # return data in correct format
     result_data = get_data_from_MinimumEigensolverResult(result)
 
-    result_out = VQER.ReferenceResult(result_data, [target_model])
+    result_out = VQER.ReferenceResult(result_data, [target_model.parameters])
     # extract eigenstate
     psi_gs = Statevector(result.eigenstate)
 
