@@ -5,8 +5,13 @@ from collections.abc import Iterable, Sequence
 from . import Calibration as cal
 from qiskit.primitives import BaseEstimator
 from qiskit.primitives import Estimator as TerraEstimator
+from qiskit.primitives import BackendEstimator as BackendEstimator
 from qiskit_aer.primitives import Estimator as AerEstimator
 from qiskit_aer.noise import NoiseModel
+
+from qiskit.transpiler import PassManager
+
+from umz_qiskit_backend.qiskit_backend import UmzSimulatorBackend
 
 import qiskit_ibm_runtime as qir
 import copy
@@ -207,8 +212,35 @@ class EstimatorCalibration(cal.Calibration):
             if not isinstance(est_opt["run_options"], Dict):
                 raise ValueError("run options must be a dictionary!")
             
+            
         elif est_prim_str == "ion_trap":
-            raise NotImplementedError
+            sub_cat = ["backend_access_path", "run_options", "transpilation_options", "abelian_grouping", "bound_pass_manager", "skip_transpilation"]
+            sub_cat.sort()
+
+            est_opt_keys_sorted = sorted(list(est_opt.keys()))
+
+            if est_opt_keys_sorted != sub_cat:
+                raise ValueError("estimator options dictionaries sub-catagories {} do not match required sub-catagories based on estimator string {}!".format(est_opt_keys_sorted, sub_cat))
+            if est_opt["run_options"] is None:
+                est_opt["run_options"] = {}
+            if not isinstance(est_opt["run_options"], Dict):
+                raise ValueError("run options must be a dictionary!")
+            
+            if est_opt["transpilation_options"] is not None:
+                if not isinstance(est_opt["transpilation_options"], Dict):
+                    raise ValueError("transpilation options must be a dictionary or None!")
+            if est_opt["bound_pass_manager"] is not None:
+                if not isinstance(est_opt["bound_pass_manager"], PassManager):
+                    raise ValueError("bound pass manager must be a qiskit.transpiler.PassManager object or None!")
+            if not isinstance(est_opt["abelian_grouping"], bool):
+                raise ValueError("abelian_grouping flag must be bool!")
+            if not isinstance(est_opt["skip_transpilation"], bool):
+                raise ValueError("skip_transpilation flag must be bool!")
+            if not isinstance(est_opt["backend_access_path"], str):
+                raise ValueError("Path to backend access file must be a string!")
+            if not os.path.isfile(est_opt["backend_access_path"]):
+                raise ValueError("File to load access data for backend not found! Searched for {}".format(est_opt["backend_access_path"]))
+                
         else:
             raise ValueError("estimator string {} does not match any known string!".format(est_prim_str))
 
@@ -251,7 +283,11 @@ class EstimatorCalibration(cal.Calibration):
             shots = self.estimator_options["run_options"].get("shots", 0)
 
         elif self.estimator_str == "ion_trap":
-            raise NotImplementedError
+            err_mitig_meth = 0
+            circ_opt_lvl = self.estimator_options["transpilation_options"].get("optimization_level", None)
+            if circ_opt_lvl is None:
+                circ_opt_lvl = 0
+            shots = self.estimator_options["run_options"].get("shots", 0)
         
         header.append("err_mitigation")
         data.append(err_mitig_meth)
@@ -438,7 +474,24 @@ class VQEEstimator:
         elif self._parameters.estimator_str == "terra":
             est = TerraEstimator(options=options_dict["run_options"])
         elif self._parameters.estimator_str == "ion_trap":
-            raise NotImplementedError
+            with open(options_dict["backend_access_path"], 'r') as f:
+                user = f.readline().strip()
+                pw = f.readline().strip()
+
+            backend = None
+            if self._parameters.backend_str == "umz_simulator":
+                backend = UmzSimulatorBackend(email=user, password=pw)
+            elif self._parameters.backend_str == "red_trap":
+                # setup RedTrapBackend
+                raise NotImplementedError
+            else:
+                raise ValueError("Backend string did not match any expected string!")
+            
+            est = BackendEstimator(backend=backend, options=options_dict["run_options"], abelian_grouping=options_dict["abelian_grouping"], bound_pass_manager=options_dict["bound_pass_manager"], skip_transpilation=options_dict["skip_transpilation"])
+            
+            if options_dict["transpilation_options"] is not None:
+                est.set_transpile_options(**options_dict["transpilation_options"])
+
         else:
             raise ValueError("estimator string {} in parameters does not match any known string!".format(self._parameters.estimator_str))
         return est
