@@ -226,6 +226,13 @@ class EstimatorCalibration(cal.Calibration):
             if not isinstance(est_opt["run_options"], Dict):
                 raise ValueError("run options must be a dictionary!")
             
+            # if shots is not set, set it to default
+            shots = est_opt["run_options"].get("shots", None)
+            if shots is None:
+                shots = 100
+                print("number of shots is undefined. Set it to {} as default.".format(shots))
+                est_opt["run_options"]["shots"] = shots
+            
             if est_opt["transpilation_options"] is not None:
                 if not isinstance(est_opt["transpilation_options"], Dict):
                     raise ValueError("transpilation options must be a dictionary or None!")
@@ -480,7 +487,8 @@ class VQEEstimator:
 
             backend = None
             if self._parameters.backend_str == "umz_simulator":
-                backend = UmzSimulatorBackend(email=user, password=pw)
+                #backend = UmzSimulatorBackend(email=user, password=pw)
+                backend = UmzSimulatorBackend()
             elif self._parameters.backend_str == "red_trap":
                 # setup RedTrapBackend
                 raise NotImplementedError
