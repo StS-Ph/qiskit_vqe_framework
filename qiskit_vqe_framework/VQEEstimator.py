@@ -11,7 +11,7 @@ from qiskit_aer.noise import NoiseModel
 
 from qiskit.transpiler import PassManager
 
-from umz_qiskit_backend.qiskit_backend import UmzSimulatorBackend
+from umz_qiskit_backend.umz_backend import UmzSimulatorBackend
 
 import qiskit_ibm_runtime as qir
 import copy
@@ -487,8 +487,8 @@ class VQEEstimator:
 
             backend = None
             if self._parameters.backend_str == "umz_simulator":
-                #backend = UmzSimulatorBackend(email=user, password=pw)
-                backend = UmzSimulatorBackend()
+                backend = UmzSimulatorBackend(email=user, password=pw)
+                #backend = UmzSimulatorBackend()
             elif self._parameters.backend_str == "red_trap":
                 # setup RedTrapBackend
                 raise NotImplementedError
