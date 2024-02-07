@@ -1,4 +1,5 @@
 from __future__ import annotations
+from importlib.metadata import version
 import numpy as np
 from typing import Callable, Dict, List, Optional, Tuple, Union
 from collections.abc import Iterable, Sequence
@@ -11,7 +12,11 @@ from qiskit_aer.noise import NoiseModel
 
 from qiskit.transpiler import PassManager
 
-from umz_qiskit_backend.umz_backend import UmzSimulatorBackend
+# load umz package differently based on installed version
+if version('umz-qiskit_backend') < '0.2':
+    from umz_qiskit_backend.qiskit_backend import UmzSimulatorBackend
+else:
+    from umz_qiskit_backend.umz_backend import UmzSimulatorBackend
 
 import qiskit_ibm_runtime as qir
 import copy
