@@ -14,9 +14,9 @@ from qiskit.transpiler import PassManager
 
 # load umz package differently based on installed version
 if version('umz-qiskit_backend') < '0.2':
-    from umz_qiskit_backend.qiskit_backend import UmzSimulatorBackend
+    from umz_qiskit_backend.qiskit_backend import UmzSimulatorBackend, RedTrapBackend
 else:
-    from umz_qiskit_backend.umz_backend import UmzSimulatorBackend
+    from umz_qiskit_backend.umz_backend import UmzSimulatorBackend, RedTrapBackend
 
 import qiskit_ibm_runtime as qir
 import copy
@@ -104,7 +104,7 @@ class EstimatorCalibration(cal.Calibration):
                                     est_prim_str: str) -> Dict:
         est_opt = copy.copy(est_opt_in)
         if est_prim_str == "aer":
-            sub_cat = ["transpilation_options", "backend_options", "run_options", "approximation", "skip_transpilation"]
+            sub_cat = ["transpilation_options", "backend_options", "run_options", "approximation", "skip_transpilation", "abelian_grouping"]
             sub_cat.sort()
 
             est_opt_keys_sorted = sorted(list(est_opt.keys()))
@@ -158,6 +158,10 @@ class EstimatorCalibration(cal.Calibration):
             else:
                 print("No shots key found. Add shots key to run options with value {}".format(shots))
                 est_opt["run_options"]["shots"] = shots
+
+            abelian_grouping = est_opt["abelian_grouping"]
+            if not isinstance(abelian_grouping, bool):
+                raise ValueError("Abelian grouping flag must be bool!")
 
 
             
@@ -238,9 +242,10 @@ class EstimatorCalibration(cal.Calibration):
                 print("number of shots is undefined. Set it to {} as default.".format(shots))
                 est_opt["run_options"]["shots"] = shots
             
-            if est_opt["transpilation_options"] is not None:
-                if not isinstance(est_opt["transpilation_options"], Dict):
-                    raise ValueError("transpilation options must be a dictionary or None!")
+            if est_opt["transpilation_options"] is None:
+                est_opt["transpilation_options"]={}
+            if not isinstance(est_opt["transpilation_options"], Dict):
+                raise ValueError("transpilation options must be a dictionary")
             if est_opt["bound_pass_manager"] is not None:
                 if not isinstance(est_opt["bound_pass_manager"], PassManager):
                     raise ValueError("bound pass manager must be a qiskit.transpiler.PassManager object or None!")
@@ -274,6 +279,7 @@ class EstimatorCalibration(cal.Calibration):
         err_mitig_meth = None
         circ_opt_lvl = None
         shots = None
+        abelian_grouping = False
 
         if self.estimator_str == "aer":
             err_mitig_meth = 0
@@ -281,6 +287,7 @@ class EstimatorCalibration(cal.Calibration):
             shots = self.estimator_options["run_options"].get("shots", None)
             if shots is None:
                 shots = self.estimator_options["backend_options"].get("shots", 0)
+            abelian_grouping = self.estimator_options["abelian_grouping"]
                 
         elif self.estimator_str == "ibm_runtime":
             err_mitig_meth = self.estimator_options["resilience_level"]
@@ -288,6 +295,9 @@ class EstimatorCalibration(cal.Calibration):
             circ_opt_lvl = self.estimator_options["optimization_level"]
             
             shots = self.estimator_options["execution_options"].get("shots")
+            # IBM estimator always uses abelian_grouping 
+            # https://quantumcomputing.stackexchange.com/questions/34694/is-qiskits-estimator-primitive-running-paulistrings-in-parallel
+            abelian_grouping = True
 
         elif self.estimator_str == "terra":
             err_mitig_meth = 0
@@ -300,6 +310,7 @@ class EstimatorCalibration(cal.Calibration):
             if circ_opt_lvl is None:
                 circ_opt_lvl = 0
             shots = self.estimator_options["run_options"].get("shots", 0)
+            abelian_grouping = self.estimator_options["abelian_grouping"]
         
         header.append("err_mitigation")
         data.append(err_mitig_meth)
@@ -321,6 +332,9 @@ class EstimatorCalibration(cal.Calibration):
 
         header.append("basis_gates")
         data.append(self.basis_gates_str)
+
+        header.append("abelian_grouping")
+        data.append(abelian_grouping)
         
 
         return header, data
@@ -479,7 +493,7 @@ class VQEEstimator:
     def _get_estimator(self) -> BaseEstimator:
         options_dict = self._parameters.estimator_options
         if self._parameters.estimator_str == "aer":
-            est = AerEstimator(backend_options=options_dict["backend_options"], transpile_options=options_dict["transpilation_options"], run_options=options_dict["run_options"], approximation=options_dict["approximation"], skip_transpilation=options_dict["skip_transpilation"])
+            est = AerEstimator(backend_options=options_dict["backend_options"], transpile_options=options_dict["transpilation_options"], run_options=options_dict["run_options"], approximation=options_dict["approximation"], skip_transpilation=options_dict["skip_transpilation"], abelian_grouping=options_dict["abelian_grouping"])
         elif self._parameters.estimator_str == "ibm_runtime":
             options = qir.options.Options(optimization_level=options_dict["optimization_level"], resilience_level=options_dict["resilience_level"], max_execution_time=options_dict["max_execution_time"], transpilation=options_dict["transpilation_options"], resilience=options_dict["resilience_options"], execution=options_dict["execution_options"], environment=options_dict["environment_options"], simulator=options_dict["simulator_options"])
             est = qir.Estimator(session=self._session, options=options)
@@ -496,7 +510,7 @@ class VQEEstimator:
                 #backend = UmzSimulatorBackend()
             elif self._parameters.backend_str == "red_trap":
                 # setup RedTrapBackend
-                raise NotImplementedError
+                backend = RedTrapBackend(email=user, password=pw)
             else:
                 raise ValueError("Backend string did not match any expected string!")
             
