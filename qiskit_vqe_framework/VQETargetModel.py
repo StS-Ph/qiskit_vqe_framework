@@ -57,7 +57,11 @@ class ModelCalibration(cal.Calibration):
         cal_name = attr_dict.pop("name", None)
 
         for key, val in attr_dict.items():
-            if isinstance(val, Sequence):
+            if isinstance(val, str):
+                # this if case should avoid that strings are caught by the sequence if case below
+                header.append(key)
+                data.append(val)
+            elif isinstance(val, Sequence):
                 for i in range(len(val)):
                     header.append(key+str(i))
                     data.append(val[i])
