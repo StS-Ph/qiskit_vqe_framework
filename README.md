@@ -46,15 +46,11 @@ To calibrate the VQE Estimator, the calibration class `EstimatorCalibration` (in
 - `noise_model_str: str`: Unique name for the used noise model
 - `coupling_map_str: str`: Unique name for the used coupling map
 - `basis_gates_str: str`: Unique name for the used basis gate set
-- `est_prim_str: str`: Name that defines what estimator is used. Possible options are `"aer"` for the Aer Estimator, `"terra"` for the qiskit-terra Estimator, `"ibm_runtime"` for the IBM runtime Estimator or `"ion_trap"` for the Ion Trap Estimator (not yet implemented)
+- `est_prim_str: str`: Name that defines what estimator is used. Possible options are `"aer"` for the Aer Estimator, `"terra"` for the qiskit-terra Estimator or `"ibm_runtime"` for the IBM runtime Estimator
 - `backend_str: str`: String that defines the used backend in the Estimator. For IBM runtime Estimator this string determines the used backend! For example `"ibmq_qasm_simulator"` sets a simulation on the ibm qasm simulator or `"ibm_cairo"` sets a real hardware run on this device. For Aer Estimator the string should be `"AerSimulator"` and for Terra Estimator the string should be `"statevector_simulator"`, but for both this variable changes nothing in the simulation.
 
 The `VQEEstimator` class expects a `EstimatorCalibration` object and a qiskit runtime `Session` object if IBM runtime is used (otherwise this can be `None`) as an input. The corresponding qiskit Estimator class is then generated via `_get_estimator()` internally from the calibration data during initialization.
 
-Note that `VQEEstimator` has already the option to generate a Ion Trap estimator via est_prim_str == "ion_trap" but the corresponding if-part in the following functions raises a `NotImplemented` error and still needs to be implemented:
-- `_validate_estimator_options()` of the `EstimatorCalibration` class
-- `get_filevector()` of the `EstimatorCalibration` class
-- `_get_estimator()` of the `VQEEstimator` class
 
 ### Optimizer Calibration
 
