@@ -36,7 +36,28 @@ class TerminationChecker(metaclass=abc.ABCMeta):
     
     def to_dict(self) -> dict:
         return copy.deepcopy(self.__dict__)
-            
+    
+    
+    def __eq__(self, other) -> bool:
+        """
+        Method to compare two TerminationChecker. It compares class instance, name, values and buffer length.
+        """
+        if not isinstance(other, TerminationChecker):
+            return False
+        
+        if self.name != other.name:
+            return False
+        
+        if self.buffer_length != other.buffer_length:
+            return False
+        
+        if self.values != other.values:
+            return False
+        
+        return True
+        
+
+
     @abc.abstractmethod
     def _check_termination(self,
                           nfev: int,
@@ -68,6 +89,17 @@ class RelativeEnergyChecker(TerminationChecker):
         self.considered_values_length = considered_values_length
         
         super().__init__(buffer_length, "relative_energy_change")
+
+    def __eq__(self, other) -> bool:
+
+        if not isinstance(other, RelativeEnergyChecker):
+            return False
+        if self.considered_values_length != other.considered_values_length:
+            return False
+        if self.epsilon != other.epsilon:
+            return False
+        
+        return super().__eq__(other)
 
     def _check_termination(self,
                           nfev: int,
@@ -112,6 +144,14 @@ class LinearFitChecker(TerminationChecker):
         self.epsilon = epsilon
         
         super().__init__(buffer_length, "linear_fit")
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, LinearFitChecker):
+            return False
+        if self.epsilon != other.epsilon:
+            return False
+        
+        return super().__eq__(other)
 
     def _check_termination(self,
                           nfev: int,

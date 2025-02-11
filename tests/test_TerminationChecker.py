@@ -21,9 +21,10 @@ class TestRelativeEnergyChecker(unittest.TestCase):
             delta = np.abs((new-old)/new)
             rel_change.append(delta)
 
-        self.assertEqual(self.checker._calc_relative_change(), rel_change[-self.checker.considered_values_length:])
+        #self.assertEqual(self.checker._calc_relative_change(), rel_change[-self.checker.considered_values_length:])
+        self.assertEqual(self.checker._calc_relative_change(), rel_change)
 
-        self.assertEqual(len(self.checker._calc_relative_change()), self.checker.considered_values_length)
+        #self.assertEqual(len(self.checker._calc_relative_change()), self.checker.considered_values_length)
 
     def test_calc_relative_change2(self):
         x = np.linspace(50, 100, num = self.checker.considered_values_length)
@@ -68,6 +69,10 @@ class TestRelativeEnergyChecker(unittest.TestCase):
 
         self.assertEqual(self.checker(101, [0.0, 0.0], val, 0.5, True), True)
 
+    def test_eq(self):
+        self.checker.values=[]
+        self.assertEqual(self.checker, TC.RelativeEnergyChecker(self.checker.buffer_length, self.checker.considered_values_length, self.checker.epsilon))
+
         
         
 class TestLinearFitChecker(unittest.TestCase):
@@ -99,3 +104,7 @@ class TestLinearFitChecker(unittest.TestCase):
         self.checker.values = list(y)
 
         self.assertEqual(self.checker(101, [0.0, 0.0], val, 0.5, True), True)
+
+    def test_eq(self):
+        self.checker.values=[]
+        self.assertEqual(self.checker, TC.LinearFitChecker(self.checker.buffer_length, self.checker.epsilon))

@@ -62,8 +62,8 @@ class TestVQEResult(unittest.TestCase):
         self.ansatz_cal = VQEA.AnsatzCalibration(4, 1, "ESU2", [1.0,0.0,0.0,0.0])
         self.checker = tc.RelativeEnergyChecker(100, 20, 0.01)
         self.opt_cal = VQEO.OptimizerCalibration("SPSA", 100, "fin_diff", param_map_init = [0.0, 0.0, 0.0], termination_checker = self.checker)
-        self.est_opt = {"transpilation_options": {"optimization_level": 3}, "backend_options": {"method": "automatic", "shots": 4000}, "run_options": {"shots": 1024}, "approximation": False, "skip_transpilation": False}
-        self.estimator_cal = VQEE.EstimatorCalibration(self.est_opt, "None", "None", "aer", "aer_automatic")
+        self.est_opt = {"abelian_grouping": False, "transpilation_options": {"optimization_level": 3}, "backend_options": {"method": "automatic", "shots": 4000}, "run_options": {"shots": 1024}, "approximation": False, "skip_transpilation": False}
+        self.estimator_cal = VQEE.EstimatorCalibration(self.est_opt, "None", "None", "None", "aer", "aer_automatic")
 
         self.vqe_result = VQER.VQEResult(self.vqe_data, [self.model_cal, self.ansatz_cal, self.opt_cal, self.estimator_cal], reference_result=self.ref_result)
 
