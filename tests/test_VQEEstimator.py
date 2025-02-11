@@ -116,25 +116,6 @@ class TestVQEEstimatorCalibration(unittest.TestCase):
 
         self.assertRaises(ValueError, self.estimator_cal._validate_estimator_options, est_opt, est_prim_str)
         
-    def test_validate_estimator_options_ion_trap(self):
-        est_prim_str = "ion_trap"
-        backend_access_path = os.path.join(os.getcwd(), "tests/", "ion_trap_access_dummy.txt")
-        est_opt = {"backend_access_path": backend_access_path, "run_options": None, "transpilation_options": None, "abelian_grouping": False, "bound_pass_manager": None, "skip_transpilation": True}
-        val_est_opt = self.estimator_cal._validate_estimator_options(est_opt, est_prim_str)
-
-        self.assertEqual(val_est_opt["run_options"], {"shots": 100})
-        self.assertIsInstance(val_est_opt["transpilation_options"], dict)
-
-        est_opt = {"backend_access_path": backend_access_path, "run_options": None, "transpilation_options": None, "abelian_grouping": "True", "bound_pass_manager": None, "skip_transpilation": True}
-        self.assertRaises(ValueError, self.estimator_cal._validate_estimator_options, est_opt, est_prim_str)
-
-        est_opt = {"backend_access_path": backend_access_path, "run_options": None, "transpilation_options": None, "abelian_grouping": False, "bound_pass_manager": None, "skip_transpilation": "False"}
-        self.assertRaises(ValueError, self.estimator_cal._validate_estimator_options, est_opt, est_prim_str)
-
-        est_opt = {"backend_access_path": 0, "run_options": None, "transpilation_options": None, "abelian_grouping": False, "bound_pass_manager": None, "skip_transpilation": True}
-        self.assertRaises(ValueError, self.estimator_cal._validate_estimator_options, est_opt, est_prim_str)
-
-
     def test_validate_estimator_options_est_prim_str(self):
         est_prim_str = "unkown_estimator"
         est_opt = {}
