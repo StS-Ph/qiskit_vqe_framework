@@ -30,5 +30,6 @@ jobs:
       run: |
         pytest tests
     - name: build docs with sphinx
-      run: |
-        sphinx-build -M html docs/source/ docs/build/
+      uses: ammaraskar/sphinx-action@master
+      with:
+        docs-folder: "docs/"
