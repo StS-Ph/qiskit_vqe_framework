@@ -6,9 +6,20 @@ import copy
 import warnings
 
 class TerminationChecker(metaclass=abc.ABCMeta):
+    """Base class for checking termination of a running optimization. 
+    The different methods for checking this are implemented as different classes, which all inherit from this base class.
+    """
     def __init__(self,
                  buffer_length: int,
                  name_str: str) -> None:
+        """
+        Args:
+            buffer_length: Integer number that determines the buffer length. The buffer contains the cost function values of previous optimization steps.
+            name_str: Unique name of the termination method that is used.
+
+        Raises:
+            ValueError: If the buffer length is not positive.
+        """
         if buffer_length <= 0:
             raise ValueError("length of history buffer {} must be a positive integer!".format(buffer_length))
         self.buffer_length = buffer_length
@@ -21,6 +32,18 @@ class TerminationChecker(metaclass=abc.ABCMeta):
                  value: float,
                  stepsize: int,
                  accepted: bool) -> bool:
+        """Calling the class as a function means to check the termination of the optimization inputs according to the implemented method.
+
+        Args:
+            nfev: Current number of cost function evaluations
+            parameters: Current optimization parameters
+            value: Current cost function value
+            stepsize: Step size for changing the optimization parameters
+            accepted: Bool flag if the optimization step is accepted by the used optimizer
+
+        Returns:
+            Bool flag if the optimization has terminated (converged).
+        """
         # add current value to history buffer
         self.values.append(value)
         # check current history buffer length
@@ -35,12 +58,22 @@ class TerminationChecker(metaclass=abc.ABCMeta):
         return False
     
     def to_dict(self) -> dict:
+        """
+        Returns:
+            Deepcopy of the class properties as a dictionary.
+        """
         return copy.deepcopy(self.__dict__)
     
     
     def __eq__(self, other) -> bool:
-        """
-        Method to compare two TerminationChecker. It compares class instance, name, values and buffer length.
+        """Method to compare two TerminationChecker objects. 
+        It compares class instance, name, values and buffer length.
+
+        Args:
+            other: Other class object that is compared with instace of this class
+
+        Returns:
+            Bool flag which is False if the two objects are not the same and True if they are the same.
         """
         if not isinstance(other, TerminationChecker):
             return False
@@ -65,19 +98,30 @@ class TerminationChecker(metaclass=abc.ABCMeta):
                           value: float,
                           stepsize: int,
                           accepted: bool) -> bool:
-        """
-        Define method to determine convergence of value
+        """Define method to determine convergence of value
+
+        Returns:
+            Bool flag that is True if the optimization terminated (has converged) and False otherwise.
         """
 
 class RelativeEnergyChecker(TerminationChecker):
+    """Class implementation to check termination of a running optimization, 
+    by evaluating the relative change in the cost function values over several iterations.
+    """
     def __init__(self,
                  buffer_length: int,
                  considered_values_length: int,
                  epsilon: float) -> None:
-        # buffer_length: maximal Length of history buffer
-        # considered_values_length: minimal number of values in history buffer to allow calculation of relative energy change
-        # epsilon: relative energy change threshold
-        
+        """
+        Args:
+            buffer_length: Integer number that determines the buffer length. The buffer contains the cost function values of previous optimization steps.
+            considered_values_length: minimal number of values in history buffer to allow calculation of relative energy change
+            epsilon: relative energy change threshold
+
+        Raises:
+            ValueError: If epsilon is negative.
+            ValueError: If considered_values_length is not positive or larger than the buffer length.
+        """
         if epsilon < 0.0:
             raise ValueError("tolerance for termination check {} must be non-negative!".format(epsilon))
         self.epsilon = epsilon
@@ -91,7 +135,15 @@ class RelativeEnergyChecker(TerminationChecker):
         super().__init__(buffer_length, "relative_energy_change")
 
     def __eq__(self, other) -> bool:
+        """Method to compare two RelativeEnergyChecker objects. 
+        It compares class instance, considered_values_length, epsilon threshold , name, values and buffer length.
 
+        Args:
+            other: Other class object that is compared with instace of this class
+
+        Returns:
+            Bool flag which is False if the two objects are not the same and True if they are the same.
+        """
         if not isinstance(other, RelativeEnergyChecker):
             return False
         if self.considered_values_length != other.considered_values_length:
@@ -107,6 +159,18 @@ class RelativeEnergyChecker(TerminationChecker):
                           value: float,
                           stepsize: int,
                           accepted: bool) -> bool:
+        """Check if the optimization has terminated (has converged) by evaluating the relative change in the cost function values.
+
+        Args:
+            nfev: Current number of cost function evaluations
+            parameters: Current optimization paramters
+            value: Current cost function value
+            stepsize: Step size for changing the optimization parameters
+            accepted: Bool flag if the optimization step is accepted by the used optimizer
+
+        Returns:
+            Bool flag if the optimization has terminated (converged).
+        """
         # handle optimization steps that have not been accepted by the optimizer routine
         if not accepted:
             return False
@@ -120,6 +184,11 @@ class RelativeEnergyChecker(TerminationChecker):
         return False
 
     def _calc_relative_change(self) -> Sequence[float]:
+        """Function to calculate the relative change in the cost function values
+
+        Returns:
+            Relative change in the cost function values
+        """
         relative_change = []
         # filter all values that are too close to zero
         considered_values = list(filter(lambda e: np.abs(e) > 1e-05, self.values))
@@ -132,13 +201,27 @@ class RelativeEnergyChecker(TerminationChecker):
         return relative_change
 
     def __repr__(self):
+        """String format of class for output in REPR.
+        """
         out = "RelativeEnergyChecker(buffer_length={}, considered_values_length={}, epsilon={})".format(self.buffer_length, self.considered_values_length, self.epsilon)
         return out
 
 class LinearFitChecker(TerminationChecker):
+    """Class implementation to check termination of a running optimization, 
+    by evaluating the cost function values over several iterations with a linear fit.
+    If the slope of the linear fit is below a certain threshold, its assumed that the optimization terminated (has converged).
+    """
     def __init__(self,
                  buffer_length: int,
                  epsilon: float) -> None:
+        """
+        Args:
+            buffer_length: Integer number that determines the buffer length. The buffer contains the cost function values of previous optimization steps.
+            epsilon: Threshold for the slope of the linear fit.
+
+        Raises:
+            ValueError: If epsilon is negative.
+        """
         if epsilon < 0.0:
             raise ValueError("tolerance for termination check {} must be non-negative!".format(epsilon))
         self.epsilon = epsilon
@@ -146,6 +229,15 @@ class LinearFitChecker(TerminationChecker):
         super().__init__(buffer_length, "linear_fit")
 
     def __eq__(self, other) -> bool:
+        """Method to compare two LinearFitChecker objects. 
+        It compares class instance, epsilon threshold, name, values and buffer length.
+
+        Args:
+            other: Other class object that is compared with instace of this class
+
+        Returns:
+            Bool flag which is False if the two objects are not the same and True if they are the same.
+        """
         if not isinstance(other, LinearFitChecker):
             return False
         if self.epsilon != other.epsilon:
@@ -159,6 +251,18 @@ class LinearFitChecker(TerminationChecker):
                           value: float,
                           stepsize: int,
                           accepted: bool) -> bool:
+        """Check if the optimization has terminated (has converged) by performing a linear fit on the cost function values.
+
+        Args:
+            nfev: Current number of cost function evaluations
+            parameters: Current optimization paramters
+            value: Current cost function value
+            stepsize: Step size for changing the optimization parameters
+            accepted: Bool flag if the optimization step is accepted by the used optimizer
+
+        Returns:
+            Bool flag if the optimization has terminated (converged).
+        """
         # handle optimization steps that have not been accepted by the optimizer routine
         if not accepted:
             return False
@@ -173,11 +277,26 @@ class LinearFitChecker(TerminationChecker):
         return False
 
     def __repr__(self):
+        """String format of class for output in REPR.
+        """
         out = "LinearFitChecker(buffer_length={}, epsilon={})".format(self.buffer_length, self.epsilon)
         return out
 
 def get_termination_checker_from_name(checker_name: str,
                                       **kwargs) -> TerminationChecker:
+    """Function to generate a termination checker class based on a unique name string.
+    
+    Args:
+        checker_name: Unique name string of the termination checker method.
+        **kwargs: Input arguments for class initialization.
+
+    Raises:
+        ValueError: If required class input arguments are set to None.
+        ValueError: If unique name string is not matching any implemented termination checker method.
+        
+    Returns:
+        Class implementation of the chosen termination checker method.
+    """
     vals = kwargs.get("values", None)
 
     if (vals is not None) and (len(vals) != 0):

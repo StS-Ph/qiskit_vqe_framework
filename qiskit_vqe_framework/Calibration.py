@@ -8,9 +8,15 @@ import os
 import pickle
 
 class Calibration(metaclass=abc.ABCMeta):
+    """Abstract base class for all calibration classes
+    """
     def __init__(self,
                  name: str,
                  **kwargs) -> None:
+        """
+        Args:
+            name: Name of the calibration class, e.g., AnsatzCalibration for calibration class that determines the VQE Ansatz.
+        """
         self.name = name
 
         for key, val in kwargs.items():
@@ -25,10 +31,22 @@ class Calibration(metaclass=abc.ABCMeta):
         return out
 
     def to_dict(self) -> Dict:
+        """
+        Returns:
+            Calibration class properties as a dictionary.
+        """
         return copy.deepcopy(self.__dict__)
 
     def to_pickle(self,
                   fname: str):
+        """Saves Calibration class in a serialized pickle file.
+
+        Args:
+            fname: Name of the file to which the object should be saved
+
+        Raises:
+            ValueError: if the file already exists.
+        """
         if os.path.isfile(fname):
             raise ValueError("file {} does already exist!".format(fname))
 
@@ -37,10 +55,10 @@ class Calibration(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_filevector(self) -> Tuple[List, List]:
-        """
-        Define method to write the summarized (shorted) calibration data in a list format
+        """Define method to write the summarized (shorted) calibration data in a list format
 
-        output: (header, data)
+        Returns:
+            Header strings and the corresponding list of data as a tuple.
         """
 
 
