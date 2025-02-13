@@ -8,13 +8,8 @@ Welcome to Qiskit VQE Calibration framework's documentation!
 
 
 .. toctree::
-   :maxdepth: 2
+   :hidden:
 
-   calibration
-   termination_checker
-   vqe_ansatz
-   vqe_estimator
-   vqe_optimizer
-   vqe_result
-   vqe_run
-   vqe_target_model
+   Documentation Home <index>
+   API Documentation <apidocs/modules>
+   
