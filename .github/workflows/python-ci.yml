@@ -32,4 +32,4 @@ jobs:
     - name: build docs with sphinx
       uses: ammaraskar/sphinx-action@master
       with:
-        docs-folder: "docs/"
+        docs-folder: "docs/source"
